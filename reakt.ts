@@ -37,9 +37,9 @@ function List({ items, ...props }) {
   })
 }
 
-function App() {
+function App({ value = '' }) {
   const items = ['hi', 'folks', 'sup']
-  return h('List', { items })
+  return h('List', { items, children: [value] })
 }
 
 function _getComponent(element) {
@@ -87,15 +87,31 @@ function _generate(element) {
   }
 }
 
+const RENDER_EVENTS = ['click', 'mouseover']
 function render(rootNode, rootComponent) {
   // TODO: enter render loop, rather than just render once
-  rootNode.innerHTML = ''
-  rootNode.append(_generate(rootComponent))
-}
+  let state = 0;
+  function _render() {
+    // DEBUG && 
+    console.log('### re-rendered', rootNode.id)
+    rootNode.innerHTML = ''
+    rootNode.append(
+      // _generate(rootComponent)
+      _generate({ ...rootComponent, props: { value: String(state), ...rootComponent.props } })
+    )
+  }
+  _render()
+  const cleanup = RENDER_EVENTS.map(eventName => {
+    const eventHandler = e => { console.log(`${eventName}'d me`); state += 1; _render(); }
+    rootNode.addEventListener(eventName, eventHandler)
+    return [eventName, eventHandler]
+  })
+
+
+  return () => cleanup.forEach(([eventName, eventHandler]) => rootNode.removeEventListener(eventName, eventHandler))
+};
 
 console.log(render(document.querySelector('#one'), h('Item')))
 console.log(render(document.querySelector('#two'), h('Item', { text: 'suppppp ' })))
-console.log(render(document.querySelector('#three'), App()))
+console.log(render(document.querySelector('#three'), h('App')))
 console.log(render(document.querySelector('#four'), h('div', { children: ['hi'] })))
-
-// document.body.innerHTML = "<div id='one'></div><div id='two'></div><div id='three'></div><div id='four'></div>"
